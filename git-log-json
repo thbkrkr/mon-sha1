@@ -1,0 +1,36 @@
+#!/bin/bash -eu
+#
+# Generate JSON git log
+#
+# git-log-json [gitdir] [branch] [range] [destination_file]
+
+main() {
+  declare gitdir=${1:-.}
+  declare branch=${2:-master}
+  declare range=${3:-10}
+  local repo=$(basename $(readlink -f $gitdir))
+  declare destfile=${4:-${repo}_$(sed "s|/|-|g" <<< $branch).json}
+
+  git --git-dir=$gitdir/.git --work-tree=$gitdir fetch
+
+  (
+    echo '{
+    "repo": "'$repo'",
+    "branch": "'$branch'",
+    "commits": '
+      git \
+        --git-dir=$gitdir/.git --work-tree=$gitdir \
+        log $branch --pretty=format:'{
+            "sha1": "%h",
+            "timestamp": "%ct",
+            "human_date": "%ci",
+            "author": "%an",
+            "message": "%s"
+          }' -$range \
+      | jq -scM .
+    echo '
+    }'
+  ) | tee $destfile
+}
+
+main "$@"

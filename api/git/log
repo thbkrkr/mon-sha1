@@ -1,0 +1,17 @@
+#!/bin/bash -eu
+
+HERE=$(dirname $($(type -P greadlink || type -P readlink) -f "$0"))
+
+main() {
+
+  # TODO: get repo/branch from an external config
+  git-log-json x origin/dev/main &
+  git-log-json y origin/master &
+
+  wait
+
+  cat *json | jq -s . > $HERE/../../_static/gitlogs.json.tmp && rm -f *_*.json
+  mv $HERE/../../_static/gitlogs.json.tmp $HERE/../../_static/gitlogs.json
+}
+
+main
